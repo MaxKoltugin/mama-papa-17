@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
 <defs>
-<linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9a0ff"/><stop offset="1" stop-color="#6b2fb8"/></linearGradient>
+<linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc2dc"/><stop offset="1" stop-color="#d23f7f"/></linearGradient>
 </defs>
-<path d="M14 6h36l12 16L32 60 2 22z" fill="#3d1474"/>
+<path d="M14 6h36l12 16L32 60 2 22z" fill="#6e1440"/>
 <path d="M14 6h36l12 16H2z" fill="url(#a)"/>
-<path d="M22 6h20l6 16H16z" fill="#d9b8ff"/>
-<path d="M2 22h14l16 38z" fill="#5a22a0"/>
-<path d="M16 22h32L32 60z" fill="#8a4ad8"/>
-<path d="M48 22h14L32 60z" fill="#4a1888"/>
-<path d="M14 6l2 16L2 22zM50 6l-2 16h14z" fill="#9b63e6"/>
+<path d="M22 6h20l6 16H16z" fill="#ffdcea"/>
+<path d="M2 22h14l16 38z" fill="#a8245e"/>
+<path d="M16 22h32L32 60z" fill="#e3568f"/>
+<path d="M48 22h14L32 60z" fill="#86194b"/>
+<path d="M14 6l2 16L2 22zM50 6l-2 16h14z" fill="#f27aaa"/>
 <path d="M24 9h7l-3 7z" fill="#fff" opacity=".75"/>
-<text x="32" y="36" text-anchor="middle" font-family="Arial Black,Arial,Helvetica,sans-serif" font-weight="900" font-size="22" fill="#fff" stroke="#2a0b52" stroke-width="3" paint-order="stroke">17</text>
+<text x="32" y="36" text-anchor="middle" font-family="Arial Black,Arial,Helvetica,sans-serif" font-weight="900" font-size="22" fill="#fff" stroke="#4a0b2a" stroke-width="3" paint-order="stroke">17</text>
 </svg>

@@ -123,10 +123,6 @@ button{font-family:inherit}
 <div id="flash"></div>
 <div class="side left" id="sideL" aria-label="Фотографии"></div>
 <div class="side right" id="sideR" aria-label="Фотографии"></div>
-<button class="snd" id="snd" type="button" aria-pressed="true" aria-label="Звук">
-  <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
-  <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
-</button>
 
 <div class="over-lay" id="finale" hidden role="dialog" aria-modal="true" aria-labelledby="fTitle">
   <div class="card">
@@ -316,23 +312,16 @@ function audio(){
   if(ac&&ac.state!=='running')ac.resume().catch(()=>{});
   return ac;
 }
-/* iPhone: звук играет и при беззвучном режиме, разблокировка на первом касании */
-let unlocked=false,silentEl=null;
-function silentWavURL(){const n=4000,b=new ArrayBuffer(44+n),v=new DataView(b),w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};
-  w(0,'RIFF');v.setUint32(4,36+n,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,8000,true);v.setUint32(28,8000,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,'data');v.setUint32(40,n,true);
-  for(let i=0;i<n;i++)v.setUint8(44+i,128);return URL.createObjectURL(new Blob([b],{type:'audio/wav'}))}
+/* Разблокировка звука эффектов: на любом касании, включая конец свайпа */
+try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+let unlocked=false,resumeAt=0;
 function unlockAudio(){
-  try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
-  if(muted)return;
   const a=audio();if(!a)return;
-  if(a.state!=='running')a.resume().catch(()=>{});
-  if(!unlocked){unlocked=true;
-    try{const b=a.createBuffer(1,1,22050),s=a.createBufferSource();s.buffer=b;s.connect(a.destination);s.start(0)}catch(e){}
-    try{silentEl=new Audio(silentWavURL());silentEl.loop=true;silentEl.setAttribute('playsinline','');silentEl.play().catch(()=>{})}catch(e){}}
-  else if(silentEl&&silentEl.paused)silentEl.play().catch(()=>{});
+  if(a.state!=='running'){resumeAt=performance.now();try{const p=a.resume();if(p&&p.catch)p.catch(()=>{})}catch(e){}}
+  if(!unlocked){unlocked=true;try{const b=a.createBuffer(1,1,22050),s=a.createBufferSource();s.buffer=b;s.connect(a.destination);s.start(0)}catch(e){}}
 }
-['pointerdown','pointerup','touchstart','touchend','click','keydown'].forEach(ev=>addEventListener(ev,unlockAudio,{capture:true,passive:true}));
-document.addEventListener('visibilitychange',()=>{if(!silentEl)return;if(document.hidden)silentEl.pause();else if(!muted)silentEl.play().catch(()=>{})});
+['pointerdown','pointerup','touchstart','touchend','mousedown','click','keydown'].forEach(ev=>addEventListener(ev,unlockAudio,{capture:true,passive:true}));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ac&&ac.state!=='running')unlockAudio()});
 /* Песня: играет фоном с первого касания, ровно и по кругу */
 const music=new Audio();music.loop=true;music.preload='auto';music.setAttribute('playsinline','');music.volume=.75;
 function startMusic(){if(muted||!music.src||document.hidden||!music.paused)return;const p=music.play();if(p&&p.catch)p.catch(()=>{})}
@@ -354,7 +343,7 @@ function tone(f1,f2,dur,gain,t0,type){
   o.connect(g);g.connect(master);o.start(t0);o.stop(t0+dur+.05);
 }
 function sfx(kind,v){
-  if(muted)return;const a=audio();if(!a)return;const t=a.currentTime;v=v==null?1:v;
+  if(muted)return;const a=audio();if(!a)return;if(a.state!=='running'){unlockAudio();return}const t=a.currentTime;v=v==null?1:v;
   switch(kind){
     case'clink':{const f=rnd(2400,3600);[1,2.76,5.4].forEach((m,i)=>tone(f*m,f*m*.998,.5/(i+1),.05*v/(i+1),t,'sine'));noise(.03,'highpass',5000,.5,.04*v,t);break}
     case'ice':{for(let i=0;i<3;i++){const f=rnd(1800,3200),tt=t+i*rnd(.03,.08);tone(f,f*.99,.18,.035*v,tt,'sine')}noise(.12,'bandpass',2600,1,.05*v,t);break}
@@ -864,7 +853,6 @@ $('fClose').addEventListener('click',()=>{$('finale').hidden=true});
 $('fAgain').addEventListener('click',()=>{$('finale').hidden=true;resetAll()});
 $('viewer').addEventListener('click',()=>{$('viewer').hidden=true});
 addEventListener('keydown',e=>{if(e.key==='Escape'){$('viewer').hidden=true;$('finale').hidden=true}});
-$('snd').addEventListener('click',()=>{muted=!muted;music.muted=muted;if(muted)music.pause();else startMusic();$('snd').setAttribute('aria-pressed',String(!muted));if(silentEl){if(muted)silentEl.pause();else silentEl.play().catch(()=>{})}if(!muted)unlockAudio()});
 function tickLabel(){drawLabel();const e=elapsed(new Date());$('fAge').textContent=ageText(e)+' '+timeText(e)}
 tickLabel();setInterval(tickLabel,1000);
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{paperCache=null;tickLabel()});

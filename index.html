@@ -363,7 +363,7 @@ function sfx(kind,v){
     case'pop':{tone(240,46,.32,.95,t,'sine');noise(.08,'highpass',1300,.7,.85,t);noise(3.2,'highpass',4200,.4,.22,t+.04,.15);noise(1.2,'bandpass',900,.8,.12,t+.05,.05);break}
     case'blip':{const f=rnd(700,1100);tone(f,f*2.1,.07,.08,t,'sine');noise(.03,'highpass',6000,.5,.03,t);break}
     case'chime':{[523.25,659.25,783.99,1046.5,1318.5].forEach((f,i)=>tone(f,f*1.001,1.4,.08,t+i*.14,'triangle'));break}
-    case'boom':{tone(110,38,.7,.22*v,t,'sine');noise(.9,'lowpass',400,.7,.18*v,t,.02);for(let i=0;i<9;i++)noise(.03,'highpass',3000,.5,.05*v,t+.35+Math.random()*.7);break}
+    case'boom':{tone(110,38,.7,.22*v,t,'sine');noise(.9,'lowpass',400,.7,.18*v,t,.02);break}
     case'thud':{tone(120,60,.18,.25*v,t,'sine');sfx('ice',.6);break}
   }
 }

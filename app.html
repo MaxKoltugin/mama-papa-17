@@ -331,6 +331,7 @@ function audio(){
     const d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
   }catch(e){ac=null}}
   if(ac&&ac.state!=='running')ac.resume().catch(()=>{});
+  if(ac)wireMusic();
   return ac;
 }
 /* Разблокировка звука эффектов: на любом касании, включая конец свайпа */
@@ -345,7 +346,9 @@ function unlockAudio(){
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ac&&ac.state!=='running')unlockAudio()});
 /* Песня: играет фоном с первого касания, ровно и по кругу */
 const music=new Audio();music.loop=true;music.preload='auto';music.setAttribute('playsinline','');music.volume=1;
-function startMusic(){if(muted||!music.src||document.hidden||!music.paused)return;const p=music.play();if(p&&p.catch)p.catch(()=>{})}
+let musicWired=false;
+function wireMusic(){if(musicWired||!ac)return;musicWired=true;try{ac.createMediaElementSource(music).connect(master)}catch(e){}}
+function startMusic(){wireMusic();if(muted||!music.src||document.hidden||!music.paused)return;const p=music.play();if(p&&p.catch)p.catch(()=>{})}
 try{fetch('hello.mp3').then(r=>r.ok?r.blob():Promise.reject()).then(b=>{music.src=URL.createObjectURL(b);startMusic()}).catch(()=>{music.src='hello.mp3';startMusic()})}catch(e){music.src='hello.mp3'}
 ['pointerdown','pointerup','touchend','click','keydown'].forEach(ev=>addEventListener(ev,startMusic,{capture:true,passive:true}));
 document.addEventListener('visibilitychange',()=>{if(document.hidden)music.pause();else startMusic()});

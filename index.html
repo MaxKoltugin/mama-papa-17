@@ -314,6 +314,7 @@ function audio(){
     const d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
   }catch(e){ac=null}}
   if(ac&&ac.state!=='running')ac.resume().catch(()=>{});
+  if(ac&&songRaw)decodeSong();
   return ac;
 }
 /* iPhone: звук играет и при беззвучном режиме, разблокировка на первом касании */
@@ -333,6 +334,25 @@ function unlockAudio(){
 }
 ['pointerdown','pointerup','touchstart','touchend','click','keydown'].forEach(ev=>addEventListener(ev,unlockAudio,{capture:true,passive:true}));
 document.addEventListener('visibilitychange',()=>{if(!silentEl)return;if(document.hidden)silentEl.pause();else if(!muted)silentEl.play().catch(()=>{})});
+/* Песня: тихое начало по кругу, на хлопке — строчка «Hello», дальше припев */
+const SONG={src:'hello.mp3',loopEnd:30.4,hello:30.6,introVol:.3,mainVol:.95};
+let songRaw=null,songBuf=null,songSrc=null,songWant='intro',songDecoding=false;
+try{fetch(SONG.src).then(r=>r.ok?r.arrayBuffer():null).then(b=>{songRaw=b;decodeSong()}).catch(()=>{})}catch(e){}
+function decodeSong(){if(songBuf||songDecoding||!songRaw||!ac)return;songDecoding=true;
+  try{ac.decodeAudioData(songRaw.slice(0),b=>{songBuf=b;tryStartSong()},()=>{})}catch(e){}}
+function playSong(offset,loop,vol){
+  if(!ac||!songBuf)return;const t=ac.currentTime;
+  if(songSrc){const o=songSrc;try{o.g.gain.cancelScheduledValues(t);o.g.gain.setValueAtTime(o.g.gain.value,t);o.g.gain.linearRampToValueAtTime(0,t+.3);o.s.stop(t+.35)}catch(e){}}
+  const s=ac.createBufferSource(),g=ac.createGain();s.buffer=songBuf;
+  if(loop){s.loop=true;s.loopStart=0;s.loopEnd=SONG.loopEnd}
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+(loop?1.2:.25));s.connect(g);g.connect(master);s.start(t,offset);songSrc={s,g,mode:loop?'intro':'main'};
+}
+function tryStartSong(){if(!ac||!songBuf||muted)return;if(songSrc&&songSrc.mode===songWant)return;
+  if(songWant==='intro')playSong(0,true,SONG.introVol);else playSong(SONG.hello,false,SONG.mainVol)}
+function songMain(){songWant='main';if(songBuf&&ac)playSong(SONG.hello,false,SONG.mainVol)}
+function songIntro(){songWant='intro';if(songBuf&&ac&&!muted)playSong(0,true,SONG.introVol)}
+['pointerup','touchend','click','keydown'].forEach(ev=>addEventListener(ev,()=>{decodeSong();tryStartSong()},{capture:true,passive:true}));
+document.addEventListener('visibilitychange',()=>{if(!ac)return;if(document.hidden)ac.suspend().catch(()=>{});else ac.resume().catch(()=>{})});
 function noise(dur,type,freq,q,gain,t0,attack){
   const s=ac.createBufferSource();s.buffer=nb;
   const f=ac.createBiquadFilter();f.type=type;f.frequency.value=freq;f.Q.value=q;
@@ -579,7 +599,7 @@ function toScreen(ly){const c=Math.cos(S.br),s=Math.sin(S.br),lx=0,yy=-ly*K;retu
 function startLift(){S.stage='lift';S.liftT=0;sfx('ice')}
 function cageOff(){S.stage='cagefall';S.fall=0;S.cageFly=true;Object.assign(S.cage,{vx:rnd(120,220),vy:-rnd(520,680),vr:rnd(4,7)});sfx('cagefree')}
 function doPop(){
-  S.stage='pop';S.popT=0;S.recoil=10;cam.sh=9;S.corkFree=true;Object.assign(S.cork,{x:0,y:-S.corkUp,r:0,vx:rnd(180,320),vy:-2600});sfx('pop');
+  S.stage='pop';S.popT=0;S.recoil=10;cam.sh=9;S.corkFree=true;Object.assign(S.cork,{x:0,y:-S.corkUp,r:0,vx:rnd(180,320),vy:-2600});sfx('pop');songMain();
   const p=toScreen(3.02);spray(p.x,p.y);fireShow();
   if(!reduce)$('flash').animate([{opacity:.55},{opacity:0}],{duration:500});
 }
@@ -846,7 +866,7 @@ function finale(){confetti();fireFinale();sfx('chime');$('finale').hidden=false;
 function resetAll(){
   active.forEach(b=>b.el.remove());active=[];queue=[];sky.innerHTML='';bubblesOn=false;found=0;filled=0;
   const n=document.querySelector('.note');if(n)n.remove();
-  buildSides();buildItems();resetState();fwMode='calm';fwNext=3;
+  buildSides();buildItems();resetState();fwMode='calm';fwNext=3;if(found===0&&songSrc)songIntro();
 }
 
 /* ===== Запуск ===== */
@@ -858,7 +878,7 @@ $('fClose').addEventListener('click',()=>{$('finale').hidden=true});
 $('fAgain').addEventListener('click',()=>{$('finale').hidden=true;resetAll()});
 $('viewer').addEventListener('click',()=>{$('viewer').hidden=true});
 addEventListener('keydown',e=>{if(e.key==='Escape'){$('viewer').hidden=true;$('finale').hidden=true}});
-$('snd').addEventListener('click',()=>{muted=!muted;$('snd').setAttribute('aria-pressed',String(!muted));if(silentEl){if(muted)silentEl.pause();else silentEl.play().catch(()=>{})}if(!muted)unlockAudio()});
+$('snd').addEventListener('click',()=>{muted=!muted;if(master)master.gain.value=muted?0:.9;if(!muted)setTimeout(tryStartSong,50);$('snd').setAttribute('aria-pressed',String(!muted));if(silentEl){if(muted)silentEl.pause();else silentEl.play().catch(()=>{})}if(!muted)unlockAudio()});
 function tickLabel(){drawLabel();const e=elapsed(new Date());$('fAge').textContent=ageText(e)+' '+timeText(e)}
 tickLabel();setInterval(tickLabel,1000);
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{paperCache=null;tickLabel()});

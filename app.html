@@ -326,7 +326,7 @@ let ac=null,master=null,nb=null,muted=false;
 function audio(){
   if(!ac){try{
     ac=new(window.AudioContext||window.webkitAudioContext)();
-    master=ac.createGain();master.gain.value=.9;master.connect(ac.destination);
+    master=ac.createGain();master.gain.value=.85;try{const cp=ac.createDynamicsCompressor();cp.threshold.value=-14;cp.knee.value=10;cp.ratio.value=6;cp.attack.value=.002;cp.release.value=.2;master.connect(cp);cp.connect(ac.destination)}catch(e){master.connect(ac.destination)}
     nb=ac.createBuffer(1,ac.sampleRate*2,ac.sampleRate);
     const d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
   }catch(e){ac=null}}
@@ -372,8 +372,8 @@ function sfx(kind,v){
     case'clink':{const f=rnd(2400,3600);[1,2.76,5.4].forEach((m,i)=>tone(f*m,f*m*.998,.5/(i+1),.2*v/(i+1),t,'sine'));noise(.03,'highpass',5000,.5,.12*v,t);break}
     case'ice':{for(let i=0;i<3;i++){const f=rnd(1800,3200),tt=t+i*rnd(.03,.08);tone(f,f*.99,.2,.14*v,tt,'sine')}noise(.12,'bandpass',2600,1,.18*v,t);break}
     case'foil':{for(let i=0;i<7;i++)noise(rnd(.03,.08),'bandpass',rnd(1800,6000),rnd(.7,1.6),.6*v,t+i*rnd(.012,.03));break}
-    case'tick':{const f=rnd(2200,2800);tone(f,f*.8,.09,.3*v,t,'triangle');tone(f*2.4,f*2,.05,.12*v,t,'sine');noise(.05,'bandpass',4200,3,.5*v,t);break}
-    case'cagefree':{tone(1900,1500,.45,.25,t,'triangle');tone(2900,2500,.3,.12,t+.05,'sine');noise(.2,'bandpass',4200,2,.45,t);break}
+    case'tick':{const f=rnd(1900,2400);tone(f,f*.85,.06,.09*v,t,'triangle');noise(.035,'bandpass',3600,2,.16*v,t,.003);break}
+    case'cagefree':{tone(1800,1500,.35,.1,t,'triangle');tone(2700,2400,.25,.05,t+.05,'sine');noise(.18,'bandpass',3800,2,.18,t,.005);break}
     case'slosh':{const f=noise(.35,'lowpass',rnd(500,900),4,.5*v,t,.06);f.frequency.exponentialRampToValueAtTime(220,t+.3);break}
     case'squeak':{const o=ac.createOscillator(),bp=ac.createBiquadFilter(),g=ac.createGain();o.type='sawtooth';const f=rnd(380,560);
       o.frequency.setValueAtTime(f,t);o.frequency.linearRampToValueAtTime(f*rnd(1.15,1.4),t+.16);bp.type='bandpass';bp.frequency.value=1400;bp.Q.value=6;
